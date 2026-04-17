@@ -12,7 +12,6 @@ const clerkWebhooks = async (req, res) => {
     console.log("📩 Webhook received:", type);
 
     switch (type) {
-      // ✅ USER CREATED
       case "user.created": {
         const userData = {
           clerkId: data.id,
@@ -23,7 +22,6 @@ const clerkWebhooks = async (req, res) => {
           creditBalance: 5,
         };
 
-        // 🔥 prevent duplicate error
         const existingUser = await userModel.findOne({
           clerkId: data.id,
         });
@@ -39,7 +37,6 @@ const clerkWebhooks = async (req, res) => {
         break;
       }
 
-      // ✅ USER UPDATED
       case "user.updated": {
         const userData = {
           email: data.email_addresses?.[0]?.email_address || "",
@@ -59,7 +56,6 @@ const clerkWebhooks = async (req, res) => {
         break;
       }
 
-      // ✅ USER DELETED
       case "user.deleted": {
         await userModel.findOneAndDelete({ clerkId: data.id });
 
@@ -79,15 +75,27 @@ const clerkWebhooks = async (req, res) => {
   }
 };
 
-// ================== GET USER CREDITS ==================
+// ================== 🔥 FIXED USER CREDITS ==================
 const userCredits = async (req, res) => {
   try {
     const { clerkId } = req.body;
 
-    const userData = await userModel.findOne({ clerkId });
+    let userData = await userModel.findOne({ clerkId });
 
+    // 🔥 AUTO CREATE USER (FINAL FIX)
     if (!userData) {
-      return res.json({ success: false, message: "User not found" });
+      console.log("⚡ User not found, creating...");
+
+      userData = await userModel.create({
+        clerkId,
+        email: "",
+        photo: "",
+        firstName: "",
+        lastName: "",
+        creditBalance: 5,
+      });
+
+      console.log("✅ User auto-created");
     }
 
     res.json({
