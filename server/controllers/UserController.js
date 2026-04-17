@@ -1,4 +1,3 @@
-import { Webhook } from "svix";
 import userModel from "../models/userModel.js";
 import transactionModel from "../models/transactionModel.js";
 import Razorpay from "razorpay";
@@ -6,11 +5,7 @@ import Razorpay from "razorpay";
 // ================== CLERK WEBHOOK ==================
 const clerkWebhooks = async (req, res) => {
   try {
-    const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
-
     const { data, type } = req.body;
-
-    console.log("📩 Webhook received:", type);
 
     console.log("📩 Webhook received:", type);
 
@@ -19,15 +14,24 @@ const clerkWebhooks = async (req, res) => {
       case "user.created": {
         const userData = {
           clerkId: data.id,
-          email: data.email_addresses[0].email_address,
+          email: data.email_addresses?.[0]?.email_address || "",
           firstName: data.first_name,
-          lastName: data.last_name, // ✅ FIXED
+          lastName: data.last_name,
           photo: data.image_url,
-          creditBalance: 5, // ✅ DEFAULT CREDIT
+          creditBalance: 5,
         };
 
-        await userModel.create(userData);
-        console.log("✅ User created in DB");
+        // 🔥 prevent duplicate error
+        const existingUser = await userModel.findOne({
+          clerkId: data.id,
+        });
+
+        if (!existingUser) {
+          await userModel.create(userData);
+          console.log("✅ User created in DB");
+        } else {
+          console.log("⚡ User already exists");
+        }
 
         res.json({ success: true });
         break;
@@ -36,9 +40,9 @@ const clerkWebhooks = async (req, res) => {
       // ✅ USER UPDATED
       case "user.updated": {
         const userData = {
-          email: data.email_addresses[0].email_address,
+          email: data.email_addresses?.[0]?.email_address || "",
           firstName: data.first_name,
-          lastName: data.last_name, // ✅ FIXED
+          lastName: data.last_name,
           photo: data.image_url,
         };
 
@@ -94,7 +98,7 @@ const userCredits = async (req, res) => {
   }
 };
 
-// ================== RAZORPAY SETUP ==================
+// ================== RAZORPAY ==================
 const razorpayInstance = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -121,13 +125,13 @@ const paymentRazorpay = async (req, res) => {
         break;
 
       case "Advanced":
-        plan = "Advanced"; // ✅ FIXED
+        plan = "Advanced";
         credits = 500;
         amount = 50;
         break;
 
       case "Business":
-        plan = "Business"; // ✅ FIXED
+        plan = "Business";
         credits = 5000;
         amount = 250;
         break;
@@ -136,7 +140,7 @@ const paymentRazorpay = async (req, res) => {
         return res.json({ success: false, message: "Invalid Plan" });
     }
 
-    const date = Date.now(); // ✅ FIXED
+    const date = Date.now();
 
     const transactionData = {
       clerkId,
@@ -170,7 +174,7 @@ const paymentRazorpay = async (req, res) => {
 // ================== VERIFY PAYMENT ==================
 const verifyRazorPay = async (req, res) => {
   try {
-    const { razorpay_order_id } = req.body; // ✅ FIXED SPELLING
+    const { razorpay_order_id } = req.body;
 
     const orderInfo = await razorpayInstance.orders.fetch(razorpay_order_id);
 
@@ -183,7 +187,6 @@ const verifyRazorPay = async (req, res) => {
         return res.json({ success: false, message: "Payment Failed" });
       }
 
-      // ✅ ADD CREDITS
       const userData = await userModel.findOne({
         clerkId: transactionData.clerkId,
       });
@@ -195,7 +198,6 @@ const verifyRazorPay = async (req, res) => {
         creditBalance: updatedCredits,
       });
 
-      // ✅ MARK PAYMENT DONE
       await transactionModel.findByIdAndUpdate(transactionData._id, {
         payment: true,
       });
