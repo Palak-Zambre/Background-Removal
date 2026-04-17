@@ -1,8 +1,11 @@
 import multer from "multer";
 
-// Creating multer middleware to parsing formdata
+// Storage config
 const storage = multer.diskStorage({
-  filename: function (re, file, callback) {
+  destination: function (req, file, callback) {
+    callback(null, "uploads/"); // folder
+  },
+  filename: function (req, file, callback) {
     callback(null, `${Date.now()}_${file.originalname}`);
   },
 });

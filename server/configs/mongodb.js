@@ -1,11 +1,20 @@
 import mongoose from "mongoose";
 
 const connectDB = async () => {
-  mongoose.connection.on("connected", () => {
-    console.log("Database Connected");
-  });
+  try {
+    mongoose.connection.on("connected", () => {
+      console.log("✅ Database Connected");
+    });
 
-  await mongoose.connect(`${process.env.MONGODB_URI}/bg-removal`);
+    mongoose.connection.on("error", (err) => {
+      console.log("❌ MongoDB Error:", err);
+    });
+
+    await mongoose.connect(process.env.MONGODB_URL);
+
+  } catch (error) {
+    console.log("❌ DB Error:", error.message);
+  }
 };
 
 export default connectDB;

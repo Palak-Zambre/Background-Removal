@@ -8,15 +8,23 @@ import imageRouter from "./routes/imagesRoutes.js";
 // App Config
 const PORT = process.env.PORT || 4000;
 const app = express();
+
+// Connect DB
 await connectDB();
 
-// Initialized Middlewares
+// 🔥 FIX: raw body for webhook ONLY
+app.use("/api/user/webhooks", express.raw({ type: "application/json" }));
+
+// Other middlewares
 app.use(express.json());
 app.use(cors());
 
-// API Routes
+// Routes
 app.get("/", (req, res) => res.send("API is working"));
 app.use("/api/user", useRouter);
 app.use("/api/image", imageRouter);
 
-app.listen(PORT, () => console.log("Server running on port: ", PORT));
+// Start server
+app.listen(PORT, () =>
+  console.log("Server running on port:", PORT)
+);
