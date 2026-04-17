@@ -8,45 +8,57 @@ const Navbar = () => {
   const { openSignIn } = useClerk();
   const { isSignedIn, user } = useUser();
   const { credit, loadCreditsData } = useContext(AppContext);
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isSignedIn) {
-      loadCreditsData();
-    }
+    if (isSignedIn) loadCreditsData();
   }, [isSignedIn]);
 
   return (
-    <div className="flex items-center justify-between mx-4 py-3 lg:mx-44">
-      <Link to={"/"}>
-        <img className="w-32 sm:w-44" src={assets.logo} alt="" />
-      </Link>
-      {isSignedIn ? (
-        <div className="flex flex-wrap gap-2 sm:gap-3">
-          <button
-            onClick={() => navigate("/buy")}
-            className="flex justify-center items-center gap-2 sm:gap-3 px-4 sm:px-7 py-2.5 bg-blue-100 rounded-full hover:scale-105 transition-all duration-700"
-          >
-            <img className="w-5" src={assets.credit_icon} alt="" />
-            <p className="text-xs sm:text-sm font-medium text-gray-600">
-              Credits: {credit}
+    <div className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 border-b border-gray-200">
+      <div className="flex items-center justify-between px-6 lg:px-32 py-3">
+
+        {/* LOGO */}
+        <Link to={"/"} className="flex items-center gap-2">
+          <img className="w-32 sm:w-40 hover:scale-105 transition duration-300" src={assets.logo} alt="logo" />
+        </Link>
+
+        {/* RIGHT SIDE */}
+        {isSignedIn ? (
+          <div className="flex items-center gap-4">
+
+            {/* CREDIT BUTTON */}
+            <button
+              onClick={() => navigate("/buy")}
+              className="relative flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-md hover:scale-105 hover:shadow-lg transition-all duration-300"
+            >
+              <img className="w-4" src={assets.credit_icon} alt="" />
+              <span className="text-sm font-semibold">{credit}</span>
+
+              {/* glow effect */}
+              <span className="absolute inset-0 rounded-full bg-white/20 opacity-0 hover:opacity-100 transition duration-300"></span>
+            </button>
+
+            {/* USER NAME */}
+            <p className="hidden md:block text-gray-700 text-sm font-medium">
+              Hi, {user?.firstName}
             </p>
+
+            {/* USER BUTTON */}
+            <div className="hover:scale-105 transition duration-300">
+              <UserButton afterSignOutUrl="/" />
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => openSignIn({})}
+            className="flex items-center gap-3 px-6 py-2.5 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-500 text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300"
+          >
+            <span className="text-sm font-medium">Get Started</span>
+            <img className="w-4" src={assets.arrow_icon} alt="" />
           </button>
-          <h1 className="flex items-center text-gray-600 max-sm:hidden">
-            Hi, {user.fullName}
-          </h1>
-          <UserButton />
-        </div>
-      ) : (
-        <button
-          onClick={() => openSignIn({})}
-          className="bg-zinc-800 text-white flex items-center gap-4 px-4 py-2 sm:px-8 sm:py-3 text-sm rounded-full"
-        >
-          Get Started{" "}
-          <img className="w-3 sm:w-4" src={assets.arrow_icon} alt="" />
-        </button>
-      )}
+        )}
+      </div>
     </div>
   );
 };
