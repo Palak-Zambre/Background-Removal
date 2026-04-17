@@ -5,26 +5,32 @@ import connectDB from "./configs/mongodb.js";
 import useRouter from "./routes/userRoutes.js";
 import imageRouter from "./routes/imagesRoutes.js";
 
-// App Config
-const PORT = process.env.PORT || 4000;
 const app = express();
+const PORT = process.env.PORT || 4000;
 
-// Connect DB
+// ✅ Connect DB
 await connectDB();
 
-// 🔥 FIX: raw body for webhook ONLY
+// ================== 🔥 IMPORTANT MIDDLEWARE ORDER ==================
+
+// 1️⃣ Webhook route MUST be raw
 app.use("/api/user/webhooks", express.raw({ type: "application/json" }));
 
-// Other middlewares
+// 2️⃣ Then JSON parser
 app.use(express.json());
+
+// 3️⃣ Then other middlewares
 app.use(cors());
 
-// Routes
+// ================== ROUTES ==================
+
 app.get("/", (req, res) => res.send("API is working"));
+
 app.use("/api/user", useRouter);
 app.use("/api/image", imageRouter);
 
-// Start server
-app.listen(PORT, () =>
-  console.log("Server running on port:", PORT)
-);
+// ================== SERVER ==================
+
+app.listen(PORT, () => {
+  console.log("🚀 Server running on port:", PORT);
+});
