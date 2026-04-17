@@ -1,13 +1,13 @@
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import axios from "axios";
-import { createContext, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export const AppContext = createContext();
 
 const AppContextProvider = (props) => {
-  const [credit, setCredit] = useState(0); // Initialize with 0 instead of false
+  const [credit, setCredit] = useState(0);
   const [image, setImage] = useState(false);
   const [resultImage, setResultImage] = useState(false);
 
@@ -18,6 +18,7 @@ const AppContextProvider = (props) => {
   const { isSignedIn } = useUser();
   const { openSignIn } = useClerk();
 
+  // ================= LOAD CREDITS =================
   const loadCreditsData = async () => {
     try {
       const token = await getToken();
@@ -27,46 +28,46 @@ const AppContextProvider = (props) => {
         return;
       }
 
-      const response = await axios.get(backendUrl + `/api/user/credits`, {
-        headers: {
-          token: token,
-        },
-      });
+      const response = await axios.get(
+        backendUrl + "/api/user/credits",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ FIXED
+          },
+        }
+      );
 
-      console.log("response :>> ", response);
+      console.log("Credits response:", response.data);
 
       if (response.data.success) {
         setCredit(response.data.userCredits);
       } else {
-        console.warn("Failed to load credits:", response.data.message);
         setCredit(0);
         toast.warning(response.data.message);
       }
     } catch (error) {
       console.error("Credits error:", error);
       setCredit(0);
-
-      // More specific error handling
-      if (error.response?.status === 404) {
-        toast.error(
-          "User account not found. Please ensure your account is properly set up."
-        );
-      } else if (error.response?.status === 401) {
-        toast.error("Authentication failed. Please try logging in again.");
-      } else {
-        toast.error(error.response?.data?.message || "Failed to load credits");
-      }
+      toast.error("Failed to load credits");
     }
   };
 
+  // ================= AUTO LOAD =================
+  useEffect(() => {
+    if (isSignedIn) {
+      loadCreditsData();
+    }
+  }, [isSignedIn]);
+
+  // ================= REMOVE BG =================
   const removeBg = async (image) => {
     try {
       if (!isSignedIn) {
         return openSignIn();
       }
+
       setImage(image);
       setResultImage(false);
-
       navigate("/result");
 
       const token = await getToken();
@@ -77,7 +78,11 @@ const AppContextProvider = (props) => {
       const { data } = await axios.post(
         backendUrl + "/api/image/remove-bg",
         formData,
-        { headers: { token } }
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ FIXED
+          },
+        }
       );
 
       if (data.success) {
@@ -86,12 +91,13 @@ const AppContextProvider = (props) => {
       } else {
         toast.error(data.message);
         data.creditBalance && setCredit(data.creditBalance);
+
         if (data.creditBalance === 0) {
           navigate("/buy");
         }
       }
     } catch (error) {
-      console.log("error :>> ", error);
+      console.log("error:", error);
       toast.error(error.message);
     }
   };
@@ -109,7 +115,9 @@ const AppContextProvider = (props) => {
   };
 
   return (
-    <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
+    <AppContext.Provider value={value}>
+      {props.children}
+    </AppContext.Provider>
   );
 };
 

@@ -7,9 +7,7 @@ const Result = () => {
   return (
     <div className="mx-4 my-3 lg:mx-44 mt-14 min-h-[75vh]">
       <div className="bg-white rounded-lg px-8 py-8 drop-shadow-sm">
-        {/* İmage Container */}
         <div className="flex flex-col sm:grid grid-cols-2 gap-8">
-          {/* Left Side */}
           <div>
             <p className="font-semibold text-gray-600 mb-4">Original</p>
             <img
@@ -18,7 +16,7 @@ const Result = () => {
               alt=""
             />
           </div>
-          {/* Right Side */}
+
           <div className="flex flex-col">
             <p className="font-semibold text-gray-600 mb-4">
               Background Removed
@@ -33,7 +31,7 @@ const Result = () => {
             </div>
           </div>
         </div>
-        {/* Buttons */}
+
         {resultImage && (
           <div className="flex justify-center sm:justify-end items-center flex-wrap gap-4 mt-6">
             <button className="px-8 py-2.5 text-violet-600 text-sm border border-violet-600 rounded-full hover:scale-105 transition-all duration-700">
