@@ -4,7 +4,7 @@ const authUser = async (req, res, next) => {
   try {
     let token = req.headers.token;
 
-    // 🔥 Support Bearer token (important)
+    // 🔥 Support Bearer token
     if (!token && req.headers.authorization) {
       token = req.headers.authorization.split(" ")[1];
     }
@@ -27,11 +27,16 @@ const authUser = async (req, res, next) => {
       });
     }
 
-    req.body.clerkId = token_decode.clerkId;
+    // ✅ FIXED LINE
+    const clerkId = token_decode.sub;
+
+    console.log("✅ ClerkId from token:", clerkId);
+
+    req.body.clerkId = clerkId;
 
     next();
   } catch (error) {
-    console.log("error:", error.message);
+    console.log("❌ AUTH ERROR:", error.message);
     res.json({ success: false, message: error.message });
   }
 };
