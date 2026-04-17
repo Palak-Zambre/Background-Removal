@@ -8,30 +8,38 @@ import imageRouter from "./routes/imagesRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ================== 🔥 CONNECT DB SAFELY ==================
+// ================== 🔥 START SERVER ==================
 const startServer = async () => {
   try {
     await connectDB();
     console.log("✅ Database Connected");
 
-    // ================== 🔥 IMPORTANT MIDDLEWARE ORDER ==================
+    // ================== 🔥 CORS FIX (VERCEL SAFE) ==================
+    app.use((req, res, next) => {
+      res.header("Access-Control-Allow-Origin", "*");
+      res.header(
+        "Access-Control-Allow-Headers",
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization, token"
+      );
+      res.header(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, OPTIONS"
+      );
 
-    // ✅ 1. CORS (FIXED)
-    app.use(
-      cors({
-        origin: "*", // allow all (you can restrict later)
-        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-      })
-    );
+      // ✅ HANDLE PREFLIGHT (MOST IMPORTANT FIX)
+      if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+      }
 
-    // ✅ VERY IMPORTANT (fix preflight error)
-    app.options("*", cors());
+      next();
+    });
 
-    // ✅ 2. Webhook route (RAW)
+    // ================== 🔥 MIDDLEWARE ORDER ==================
+
+    // 1️⃣ Clerk webhook (RAW BODY)
     app.use("/api/user/webhooks", express.raw({ type: "application/json" }));
 
-    // ✅ 3. JSON parser
+    // 2️⃣ JSON parser
     app.use(express.json());
 
     // ================== ROUTES ==================
@@ -47,7 +55,7 @@ const startServer = async () => {
       res.status(500).json({ success: false, message: err.message });
     });
 
-    // ================== START SERVER ==================
+    // ================== START ==================
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port: ${PORT}`);
     });
