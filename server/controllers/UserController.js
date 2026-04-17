@@ -5,7 +5,9 @@ import Razorpay from "razorpay";
 // ================== CLERK WEBHOOK ==================
 const clerkWebhooks = async (req, res) => {
   try {
-    const { data, type } = req.body;
+    const payload = JSON.parse(req.body.toString());
+
+    const { data, type } = payload;
 
     console.log("📩 Webhook received:", type);
 
