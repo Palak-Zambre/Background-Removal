@@ -16,14 +16,23 @@ const startServer = async () => {
 
     // ================== 🔥 IMPORTANT MIDDLEWARE ORDER ==================
 
-    // 1️⃣ Webhook route MUST be raw (Clerk requirement)
+    // ✅ 1. CORS (FIXED)
+    app.use(
+      cors({
+        origin: "*", // allow all (you can restrict later)
+        methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowedHeaders: ["Content-Type", "Authorization"],
+      })
+    );
+
+    // ✅ VERY IMPORTANT (fix preflight error)
+    app.options("*", cors());
+
+    // ✅ 2. Webhook route (RAW)
     app.use("/api/user/webhooks", express.raw({ type: "application/json" }));
 
-    // 2️⃣ JSON parser
+    // ✅ 3. JSON parser
     app.use(express.json());
-
-    // 3️⃣ CORS
-    app.use(cors());
 
     // ================== ROUTES ==================
 
