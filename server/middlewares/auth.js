@@ -2,42 +2,43 @@ import jwt from "jsonwebtoken";
 
 const authUser = async (req, res, next) => {
   try {
-    let token = req.headers.token;
+    let token;
 
-    // 🔥 Support Bearer token
-    if (!token && req.headers.authorization) {
+    // ✅ ALWAYS read from Authorization header
+    if (req.headers.authorization) {
       token = req.headers.authorization.split(" ")[1];
     }
 
-    console.log("token:", token);
+    console.log("TOKEN:", token);
 
     if (!token) {
-      return res.json({
+      return res.status(401).json({
         success: false,
-        message: "Not Authorized, Login Again",
+        message: "No token provided",
       });
     }
 
-    const token_decode = jwt.decode(token);
+    const decoded = jwt.decode(token);
 
-    if (!token_decode) {
-      return res.json({
+    if (!decoded) {
+      return res.status(401).json({
         success: false,
-        message: "Invalid Token",
+        message: "Invalid token",
       });
     }
 
-    // ✅ FIXED LINE
-    const clerkId = token_decode.sub;
+    // ✅ VERY IMPORTANT (CLERK ID FIX)
+    req.body.clerkId = decoded.sub;
 
-    console.log("✅ ClerkId from token:", clerkId);
-
-    req.body.clerkId = clerkId;
+    console.log("✅ ClerkId:", decoded.sub);
 
     next();
   } catch (error) {
     console.log("❌ AUTH ERROR:", error.message);
-    res.json({ success: false, message: error.message });
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

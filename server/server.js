@@ -1,6 +1,5 @@
 import "dotenv/config";
 import express from "express";
-import cors from "cors";
 import connectDB from "./configs/mongodb.js";
 import useRouter from "./routes/userRoutes.js";
 import imageRouter from "./routes/imagesRoutes.js";
@@ -8,35 +7,36 @@ import imageRouter from "./routes/imagesRoutes.js";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// ================== 🔥 START SERVER ==================
+// ================== START SERVER ==================
 const startServer = async () => {
   try {
+    // ✅ Connect DB
     await connectDB();
     console.log("✅ Database Connected");
 
     // ================== 🔥 CORS FIX (VERCEL SAFE) ==================
     app.use((req, res, next) => {
-      res.header("Access-Control-Allow-Origin", "*");
-      res.header(
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader(
         "Access-Control-Allow-Headers",
-        "Origin, X-Requested-With, Content-Type, Accept, Authorization, token"
+        "Origin, X-Requested-With, Content-Type, Accept, Authorization"
       );
-      res.header(
+      res.setHeader(
         "Access-Control-Allow-Methods",
         "GET, POST, PUT, DELETE, OPTIONS"
       );
 
-      // ✅ HANDLE PREFLIGHT (MOST IMPORTANT FIX)
+      // ✅ Handle preflight requests (VERY IMPORTANT)
       if (req.method === "OPTIONS") {
-        return res.sendStatus(200);
+        return res.status(200).end();
       }
 
       next();
     });
 
-    // ================== 🔥 MIDDLEWARE ORDER ==================
+    // ================== MIDDLEWARE ORDER ==================
 
-    // 1️⃣ Clerk webhook (RAW BODY)
+    // 1️⃣ Clerk webhook (RAW body)
     app.use("/api/user/webhooks", express.raw({ type: "application/json" }));
 
     // 2️⃣ JSON parser
@@ -52,7 +52,10 @@ const startServer = async () => {
     // ================== ERROR HANDLER ==================
     app.use((err, req, res, next) => {
       console.error("❌ Global Error:", err.message);
-      res.status(500).json({ success: false, message: err.message });
+      res.status(500).json({
+        success: false,
+        message: err.message,
+      });
     });
 
     // ================== START ==================
