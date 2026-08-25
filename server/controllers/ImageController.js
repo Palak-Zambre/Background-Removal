@@ -34,6 +34,9 @@ const removeBgImage = async (req, res) => {
       filename: req.file.originalname,
       contentType: req.file.mimetype,
     });
+    // Clipdrop otherwise returns an image unchanged when it finds any existing
+    // alpha channel, even if the visible background still needs removing.
+    formData.append("transparency_handling", "discard_alpha_layer");
 
     const { data } = await axios.post("https://clipdrop-api.co/remove-background/v1", formData, {
       headers: { ...formData.getHeaders(), "x-api-key": process.env.CLIPDROP_API },
