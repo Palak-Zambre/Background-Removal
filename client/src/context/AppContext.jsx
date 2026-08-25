@@ -1,124 +1,73 @@
 import { useAuth, useClerk, useUser } from "@clerk/clerk-react";
 import axios from "axios";
-import { createContext, useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import { AppContext } from "./AppContext";
 
-export const AppContext = createContext();
+const backendUrl = (import.meta.env.VITE_BACKEND_URI || "http://localhost:4000").replace(/\/$/, "");
+const maxImageSize = 5 * 1024 * 1024;
 
-const AppContextProvider = (props) => {
+const AppContextProvider = ({ children }) => {
   const [credit, setCredit] = useState(0);
-  const [image, setImage] = useState(false);
-  const [resultImage, setResultImage] = useState(false);
-
-  const backendUrl = import.meta.env.VITE_BACKEND_URI;
+  const [image, setImage] = useState(null);
+  const [resultImage, setResultImage] = useState(null);
   const navigate = useNavigate();
-
   const { getToken } = useAuth();
   const { isSignedIn } = useUser();
   const { openSignIn } = useClerk();
 
-  // ================= LOAD CREDITS =================
-  const loadCreditsData = async () => {
+  const loadCreditsData = useCallback(async () => {
+    if (!isSignedIn) return;
     try {
       const token = await getToken();
-
-      if (!token) {
-        toast.error("Authentication token not found");
-        return;
-      }
-
-      const response = await axios.get(
-        backendUrl + "/api/user/credits",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ FIXED
-          },
-        }
-      );
-
-      console.log("Credits response:", response.data);
-
-      if (response.data.success) {
-        setCredit(response.data.userCredits);
-      } else {
-        setCredit(0);
-        toast.warning(response.data.message);
-      }
+      const { data } = await axios.get(`${backendUrl}/api/user/credits`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (data.success) setCredit(data.userCredits);
+      else toast.error(data.message || "Failed to load credits");
     } catch (error) {
-      console.error("Credits error:", error);
       setCredit(0);
-      toast.error("Failed to load credits");
+      toast.error(error.response?.data?.message || "Failed to load credits");
     }
-  };
+  }, [getToken, isSignedIn]);
 
-  // ================= AUTO LOAD =================
-  useEffect(() => {
-    if (isSignedIn) {
-      loadCreditsData();
-    }
-  }, [isSignedIn]);
+  useEffect(() => { loadCreditsData(); }, [loadCreditsData]);
 
-  // ================= REMOVE BG =================
-  const removeBg = async (image) => {
+  const removeBg = async (file) => {
+    if (!isSignedIn) return openSignIn();
+    if (!file || !file.type.startsWith("image/")) return toast.error("Please choose an image file");
+    if (file.size > maxImageSize) return toast.error("Image must be 5MB or smaller");
+
+    setImage(file);
+    setResultImage(null);
+    navigate("/result");
     try {
-      if (!isSignedIn) {
-        return openSignIn();
-      }
-
-      setImage(image);
-      setResultImage(false);
-      navigate("/result");
-
       const token = await getToken();
-
       const formData = new FormData();
-      image && formData.append("image", image);
-
-      const { data } = await axios.post(
-        backendUrl + "/api/image/remove-bg",
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ FIXED
-          },
-        }
-      );
-
+      formData.append("image", file);
+      const { data } = await axios.post(`${backendUrl}/api/image/remove-bg`, formData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (data.success) {
         setResultImage(data.resultImage);
-        data.creditBalance && setCredit(data.creditBalance);
+        setCredit(data.creditBalance);
       } else {
-        toast.error(data.message);
-        data.creditBalance && setCredit(data.creditBalance);
-
-        if (data.creditBalance === 0) {
-          navigate("/buy");
-        }
+        if (data.creditBalance !== undefined) setCredit(data.creditBalance);
+        toast.error(data.message || "Unable to remove the background");
+        if (data.creditBalance === 0) navigate("/buy");
       }
     } catch (error) {
-      console.log("error:", error);
-      toast.error(error.message);
+      const data = error.response?.data;
+      if (data?.creditBalance !== undefined) setCredit(data.creditBalance);
+      toast.error(data?.message || "Unable to remove the background");
+      if (data?.creditBalance === 0) navigate("/buy");
     }
   };
 
-  const value = {
-    credit,
-    setCredit,
-    loadCreditsData,
-    backendUrl,
-    image,
-    setImage,
-    removeBg,
-    resultImage,
-    setResultImage,
-  };
-
-  return (
-    <AppContext.Provider value={value}>
-      {props.children}
-    </AppContext.Provider>
-  );
+  return <AppContext.Provider value={{ credit, setCredit, loadCreditsData, backendUrl, image, setImage, removeBg, resultImage, setResultImage }}>{children}</AppContext.Provider>;
 };
 
+AppContextProvider.propTypes = { children: PropTypes.node.isRequired };
 export default AppContextProvider;

@@ -25,15 +25,22 @@ A Full Stack AI-powered SaaS website that allows users to upload images, remove 
    cd ai-bg-removal-website  
    ```  
 
-3. **Install dependencies**:  
-   ```bash  
-   npm install  
-   ```  
+3. **Install dependencies and configure environment files**:
+   ```bash
+   cd client && npm install
+   copy .env.example .env
+   cd ../server && npm install
+   copy .env.example .env
+   npm run migrate:indexes
+   ```
 
-4. **Start the development server**:  
-   ```bash  
-   npm run dev  
-   ```  
+4. **Start the app**:
+   ```bash
+   # terminal 1
+   cd server && npm start
+   # terminal 2
+   cd client && npm run dev
+   ```
 
 ## License  
 This project is open-source and available under the [MIT License](LICENSE).  

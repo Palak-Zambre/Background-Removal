@@ -1,44 +1,26 @@
-import jwt from "jsonwebtoken";
+import { clerkClient } from "@clerk/clerk-sdk-node";
 
 const authUser = async (req, res, next) => {
   try {
-    let token;
-
-    // ✅ ALWAYS read from Authorization header
-    if (req.headers.authorization) {
-      token = req.headers.authorization.split(" ")[1];
+    const [scheme, token] = (req.headers.authorization || "").split(" ");
+    if (scheme !== "Bearer" || !token) {
+      return res.status(401).json({ success: false, message: "Authentication token is required" });
     }
 
-    console.log("TOKEN:", token);
-
-    if (!token) {
-      return res.status(401).json({
-        success: false,
-        message: "No token provided",
-      });
+    if (!process.env.CLERK_SECRET_KEY) {
+      return res.status(503).json({ success: false, message: "Authentication is not configured on the server" });
     }
 
-    const decoded = jwt.decode(token);
-
-    if (!decoded) {
-      return res.status(401).json({
-        success: false,
-        message: "Invalid token",
-      });
+    const payload = await clerkClient.verifyToken(token);
+    if (!payload?.sub) {
+      return res.status(401).json({ success: false, message: "Invalid authentication token" });
     }
 
-    // ✅ VERY IMPORTANT (CLERK ID FIX)
-    req.body.clerkId = decoded.sub;
-
-    console.log("✅ ClerkId:", decoded.sub);
-
+    req.auth = { clerkId: payload.sub };
     next();
   } catch (error) {
-    console.log("❌ AUTH ERROR:", error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.log("Authentication error:", error.message);
+    return res.status(401).json({ success: false, message: "Invalid or expired authentication token" });
   }
 };
 

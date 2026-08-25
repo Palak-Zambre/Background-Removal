@@ -55,7 +55,7 @@ const Upload = () => {
           </label>
 
           {/* HOVER GLOW */}
-          <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10"></div>
+          <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition duration-500 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10"></div>
         </div>
       </div>
     </div>

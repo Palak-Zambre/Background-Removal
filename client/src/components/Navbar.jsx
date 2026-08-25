@@ -1,18 +1,14 @@
 import { useClerk, UserButton, useUser } from "@clerk/clerk-react";
 import { assets } from "../assets/assets";
 import { Link, useNavigate } from "react-router-dom";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { AppContext } from "../context/AppContext";
 
 const Navbar = () => {
   const { openSignIn } = useClerk();
   const { isSignedIn, user } = useUser();
-  const { credit, loadCreditsData } = useContext(AppContext);
+  const { credit } = useContext(AppContext);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isSignedIn) loadCreditsData();
-  }, [isSignedIn]);
 
   return (
     <div className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 border-b border-gray-200">

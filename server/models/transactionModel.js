@@ -1,13 +1,14 @@
 import mongoose from "mongoose";
 
 const transactionSchema = new mongoose.Schema({
-  clerkId: { type: String, required: true },
+  clerkId: { type: String, required: true, index: true },
   plan: { type: String, required: true },
   amount: { type: Number, required: true },
   credits: { type: Number, required: true },
-  clerkId: { type: Boolean, required: true },
-  date: { type: Number },
-});
+  payment: { type: Boolean, default: false },
+  razorpayOrderId: { type: String, default: "" },
+  date: { type: Number, default: Date.now },
+}, { timestamps: true });
 
 const transactionModel =
   mongoose.models.transaction ||

@@ -18,6 +18,6 @@ useRouter.post(
 
 useRouter.get("/credits", authUser, userCredits);
 useRouter.post("/pay-razor", authUser, paymentRazorpay);
-useRouter.post("/verify-razor", verifyRazorPay);
+useRouter.post("/verify-razor", authUser, verifyRazorPay);
 
 export default useRouter;

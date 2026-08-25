@@ -1,86 +1,54 @@
 import axios from "axios";
-import fs from "fs";
 import FormData from "form-data";
 import userModel from "../models/userModel.js";
 
 const removeBgImage = async (req, res) => {
+  let reservedCredit = false;
+
   try {
-    const { clerkId } = req.body;
-
-    // 🔍 Find user
-    const user = await userModel.findOne({ clerkId });
-    if (!user) {
-      return res.json({ success: false, message: "User Not Found" });
-    }
-
-    // 🔍 Check credits
-    if (user.creditBalance <= 0) {
-      return res.json({
-        success: false,
-        message: "No Credit Balance",
-        creditBalance: user.creditBalance,
-      });
-    }
-
-    // 🔍 Check file
+    const { clerkId } = req.auth;
     if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded",
-      });
+      return res.status(400).json({ success: false, message: "Upload an image file up to 5MB" });
     }
 
-    const imagePath = req.file.path;
+    const user = await userModel.findOneAndUpdate(
+      { clerkId, creditBalance: { $gt: 0 } },
+      { $inc: { creditBalance: -1 } },
+      { new: true },
+    );
+
+    if (!user) {
+      const existingUser = await userModel.findOne({ clerkId });
+      return res.status(402).json({
+        success: false,
+        message: existingUser ? "No credit balance" : "User not found",
+        creditBalance: existingUser?.creditBalance ?? 0,
+      });
+    }
+    reservedCredit = true;
+
+    if (!process.env.CLIPDROP_API) throw new Error("CLIPDROP_API is not configured");
 
     const formData = new FormData();
-    formData.append("image_file", fs.createReadStream(imagePath));
-
-    // 🔥 Clipdrop API call
-    const { data } = await axios.post(
-      "https://clipdrop-api.co/remove-background/v1",
-      formData,
-      {
-        headers: {
-          ...formData.getHeaders(),
-          "x-api-key": process.env.CLIPDROP_API, // ✅ matches your .env
-        },
-        responseType: "arraybuffer",
-      }
-    );
-
-    // 🔄 Convert to base64
-    const base64Image = Buffer.from(data, "binary").toString("base64");
-    const resultImage = `data:${req.file.mimetype};base64,${base64Image}`;
-
-    // ✅ SAFE CREDIT UPDATE (FIXED)
-    const updatedUser = await userModel.findByIdAndUpdate(
-      user._id,
-      { $inc: { creditBalance: -1 } },
-      { new: true }
-    );
-
-    // 🧹 Delete temp file (IMPORTANT for Vercel)
-    fs.unlinkSync(imagePath);
-
-    // ✅ Response
-    res.json({
-      success: true,
-      resultImage,
-      creditBalance: updatedUser.creditBalance,
-      message: "Background Removed",
+    formData.append("image_file", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
     });
 
+    const { data } = await axios.post("https://clipdrop-api.co/remove-background/v1", formData, {
+      headers: { ...formData.getHeaders(), "x-api-key": process.env.CLIPDROP_API },
+      responseType: "arraybuffer",
+      timeout: 60_000,
+    });
+
+    const resultImage = `data:image/png;base64,${Buffer.from(data).toString("base64")}`;
+    return res.json({ success: true, resultImage, creditBalance: user.creditBalance, message: "Background removed" });
   } catch (error) {
-    if (error.response) {
-      console.log("Response data:", error.response.data);
-      console.log("Response status:", error.response.status);
+    if (reservedCredit) {
+      await userModel.updateOne({ clerkId: req.auth.clerkId }, { $inc: { creditBalance: 1 } });
     }
-    console.log("Error message:", error.message);
-
-    res.json({
-      success: false,
-      message: "Failed to remove background",
-    });
+    console.log("Image processing error:", error.response?.status || error.message);
+    return res.status(502).json({ success: false, message: "Failed to remove the background. Your credit was restored." });
   }
 };
 
