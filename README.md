@@ -41,6 +41,3 @@ A Full Stack AI-powered SaaS website that allows users to upload images, remove 
    # terminal 2
    cd client && npm run dev
    ```
-
-## License  
-This project is open-source and available under the [MIT License](LICENSE).  
