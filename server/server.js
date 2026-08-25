@@ -7,8 +7,20 @@ import imageRouter from "./routes/imagesRoutes.js";
 
 const app = express();
 
+const allowedOrigins = (process.env.CLIENT_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL ? process.env.CLIENT_URL.split(",") : true,
+  origin(origin, callback) {
+    // Browser Origin values never end in a slash. Normalize configured values
+    // above so CLIENT_URL works whether the Vercel value includes one or not.
+    if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error(`Origin ${origin} is not allowed by CORS`));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
