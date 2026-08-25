@@ -1,8 +1,16 @@
 import { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppContext } from "../context/AppContext";
 
 const Result = () => {
-  const { resultImage, image } = useContext(AppContext);
+  const { resultImage, image, setImage, setResultImage } = useContext(AppContext);
+  const navigate = useNavigate();
+
+  const tryAnotherImage = () => {
+    setImage(null);
+    setResultImage(null);
+    navigate("/");
+  };
 
   return (
     <div className="mx-4 my-3 lg:mx-44 mt-14 min-h-[75vh]">
@@ -34,7 +42,10 @@ const Result = () => {
 
         {resultImage && (
           <div className="flex justify-center sm:justify-end items-center flex-wrap gap-4 mt-6">
-            <button className="px-8 py-2.5 text-violet-600 text-sm border border-violet-600 rounded-full hover:scale-105 transition-all duration-700">
+            <button
+              onClick={tryAnotherImage}
+              className="px-8 py-2.5 text-violet-600 text-sm border border-violet-600 rounded-full hover:scale-105 transition-all duration-700"
+            >
               Try another image
             </button>
             <a
